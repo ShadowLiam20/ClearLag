@@ -6,10 +6,12 @@ author: Liam
 description: Verwijdert automatisch items die op de grond liggen.
 commands:
   clearlag:
-    description: Herlaadt de ClearLag config.
-    usage: /clearlag reload
-    permission: clearlag.reload
+    description: Herlaadt de ClearLag config of voert direct cleanup uit.
+    usage: /clearlag <reload|run>
 permissions:
   clearlag.reload:
     description: Laat je de ClearLag config herladen.
+    default: op
+  clearlag.run:
+    description: Laat je direct een cleanup uitvoeren.
     default: op

@@ -4,14 +4,21 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.World;
+import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Projectile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class ClearLagPlugin extends JavaPlugin {
     private final List<BukkitTask> scheduledTasks = new ArrayList<>();
@@ -34,7 +41,35 @@ public final class ClearLagPlugin extends JavaPlugin {
             return false;
         }
 
+        if (args.length == 1 && args[0].equalsIgnoreCase("run")) {
+            if (!sender.hasPermission("clearlag.run")) {
+                sender.sendMessage(colorize(getConfig().getString(
+                        "messages.no-permission",
+                        "%prefix%&cJe hebt geen permissie voor dit commando."
+                ).replace("%prefix%", getConfig().getString("messages.prefix", "&8[&aClearLag&8] "))));
+                return true;
+            }
+
+            CleanupResult cleanupResult = runCleanup();
+            sender.sendMessage(colorize(formatCleanupMessage(
+                    getConfig().getString(
+                            "messages.manual-cleanup-complete",
+                            "%prefix%&fCleanup uitgevoerd. Verwijderd: &b%amount%&f."
+                    ),
+                    cleanupResult
+            )));
+            return true;
+        }
+
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("clearlag.reload")) {
+                sender.sendMessage(colorize(getConfig().getString(
+                        "messages.no-permission",
+                        "%prefix%&cJe hebt geen permissie voor dit commando."
+                ).replace("%prefix%", getConfig().getString("messages.prefix", "&8[&aClearLag&8] "))));
+                return true;
+            }
+
             reloadConfig();
             restartCleanupScheduler();
             sender.sendMessage(colorize(getConfig().getString(
@@ -46,7 +81,7 @@ public final class ClearLagPlugin extends JavaPlugin {
 
         sender.sendMessage(colorize(getConfig().getString(
                 "messages.reload-usage",
-                "%prefix%&fGebruik: &e/clearlag reload"
+                "%prefix%&fGebruik: &e/clearlag reload &7of &e/clearlag run"
         ).replace("%prefix%", getConfig().getString("messages.prefix", "&8[&aClearLag&8] "))));
         return true;
     }
@@ -57,13 +92,14 @@ public final class ClearLagPlugin extends JavaPlugin {
         scheduleWarnings(safeDelaySeconds);
 
         BukkitTask cleanupTask = Bukkit.getScheduler().runTaskLater(this, () -> {
-            int removedItems = clearGroundItems();
-            broadcastMessage(
+            CleanupResult cleanupResult = runCleanup();
+            broadcastMessage(formatCleanupMessage(
                     getConfig().getString(
                             "messages.cleanup-complete",
-                            "%prefix%&f%amount% items van de grond verwijderd."
-                    ).replace("%amount%", Integer.toString(removedItems))
-            );
+                            "%prefix%&fCleanup voltooid. Verwijderd: &b%amount%&f."
+                    ),
+                    cleanupResult
+            ));
 
             scheduleCleanupCycle(getIntervalSeconds());
         }, safeDelaySeconds * 20L);
@@ -107,14 +143,59 @@ public final class ClearLagPlugin extends JavaPlugin {
         return Math.max(1L, getConfig().getLong("cleanup.interval-seconds", 900L));
     }
 
-    private int clearGroundItems() {
-        int removed = 0;
+    private CleanupResult runCleanup() {
+        CleanupResult cleanupResult = new CleanupResult();
 
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntitiesByClass(Item.class)) {
-                entity.remove();
-                removed++;
+            if (getConfig().getBoolean("cleanup.remove-items", true)) {
+                cleanupResult.add("items", removeEntities(world.getEntitiesByClass(Item.class)));
             }
+
+            if (getConfig().getBoolean("cleanup.remove-xp-orbs", true)) {
+                cleanupResult.add("xp", removeEntities(world.getEntitiesByClass(ExperienceOrb.class)));
+            }
+
+            if (getConfig().getBoolean("cleanup.remove-arrows", true)) {
+                cleanupResult.add("arrows", removeEntities(world.getEntitiesByClass(AbstractArrow.class)));
+            }
+
+            if (getConfig().getBoolean("cleanup.remove-other-projectiles", false)) {
+                cleanupResult.add("projectiles", removeProjectiles(world));
+            }
+
+            if (getConfig().getBoolean("cleanup.remove-minecarts", false)) {
+                cleanupResult.add("minecarts", removeEntities(world.getEntitiesByClass(Minecart.class)));
+            }
+
+            if (getConfig().getBoolean("cleanup.remove-boats", false)) {
+                cleanupResult.add("boats", removeEntities(world.getEntitiesByClass(Boat.class)));
+            }
+        }
+
+        return cleanupResult;
+    }
+
+    private int removeProjectiles(World world) {
+        int removed = 0;
+
+        for (Entity entity : world.getEntitiesByClass(Projectile.class)) {
+            if (entity instanceof AbstractArrow) {
+                continue;
+            }
+
+            entity.remove();
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private int removeEntities(List<? extends Entity> entities) {
+        int removed = 0;
+
+        for (Entity entity : entities) {
+            entity.remove();
+            removed++;
         }
 
         return removed;
@@ -142,6 +223,15 @@ public final class ClearLagPlugin extends JavaPlugin {
         scheduleCleanupCycle(getStartDelaySeconds());
     }
 
+    private String formatCleanupMessage(String template, CleanupResult cleanupResult) {
+        String prefix = getConfig().getString("messages.prefix", "&8[&aClearLag&8] ");
+
+        return template
+                .replace("%prefix%", prefix)
+                .replace("%amount%", Integer.toString(cleanupResult.getTotalRemoved()))
+                .replace("%details%", cleanupResult.getDetailsSummary());
+    }
+
     private String formatTime(int totalSeconds) {
         if (totalSeconds < 60) {
             return totalSeconds + " seconde" + (totalSeconds == 1 ? "" : "n");
@@ -159,5 +249,40 @@ public final class ClearLagPlugin extends JavaPlugin {
 
     private String colorize(String text) {
         return text.replace("&", "\u00A7");
+    }
+
+    private static final class CleanupResult {
+        private final Map<String, Integer> removedByType = new LinkedHashMap<>();
+
+        private void add(String type, int amount) {
+            if (amount <= 0) {
+                return;
+            }
+
+            removedByType.merge(type, amount, Integer::sum);
+        }
+
+        private int getTotalRemoved() {
+            int total = 0;
+
+            for (int amount : removedByType.values()) {
+                total += amount;
+            }
+
+            return total;
+        }
+
+        private String getDetailsSummary() {
+            if (removedByType.isEmpty()) {
+                return "niets";
+            }
+
+            List<String> parts = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : removedByType.entrySet()) {
+                parts.add(entry.getValue() + " " + entry.getKey());
+            }
+
+            return String.join(", ", parts);
+        }
     }
 }

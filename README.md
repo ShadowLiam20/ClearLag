@@ -87,7 +87,7 @@ cleanup:
     - ALLAY
 
 warnings:
-  enabled: true
+  enabled: false
   times-seconds:
     - 60
     - 30

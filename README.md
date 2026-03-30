@@ -62,8 +62,8 @@ Standaardconfig:
 
 ```yml
 cleanup:
-  start-delay-seconds: 900
-  interval-seconds: 900
+  start-delay-seconds: 600
+  interval-seconds: 600
   remove-items: true
   remove-xp-orbs: true
   remove-arrows: true

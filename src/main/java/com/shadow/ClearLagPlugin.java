@@ -1,5 +1,7 @@
 package com.shadow;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -20,8 +22,10 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Tameable;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -32,6 +36,7 @@ import java.util.Set;
 
 public final class ClearLagPlugin extends JavaPlugin {
     private final List<BukkitTask> scheduledTasks = new ArrayList<>();
+    private final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacyAmpersand();
 
     @Override
     public void onEnable() {
@@ -46,7 +51,12 @@ public final class ClearLagPlugin extends JavaPlugin {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args
+    ) {
         if (!command.getName().equalsIgnoreCase("clearlag")) {
             return false;
         }
@@ -241,7 +251,7 @@ public final class ClearLagPlugin extends JavaPlugin {
         return removed;
     }
 
-    private int removeEntities(List<? extends Entity> entities) {
+    private int removeEntities(Collection<? extends Entity> entities) {
         int removed = 0;
 
         for (Entity entity : entities) {
@@ -265,7 +275,7 @@ public final class ClearLagPlugin extends JavaPlugin {
             return false;
         }
 
-        if (entity.getCustomName() != null || isLeashed(entity) || !entity.getPassengers().isEmpty() || entity.isInsideVehicle()) {
+        if (entity.customName() != null || isLeashed(entity) || !entity.getPassengers().isEmpty() || entity.isInsideVehicle()) {
             return false;
         }
 
@@ -340,7 +350,8 @@ public final class ClearLagPlugin extends JavaPlugin {
         }
 
         String prefix = getConfig().getString("messages.prefix", "&8[&aClearLag&8] ");
-        Bukkit.broadcastMessage(colorize(rawMessage.replace("%prefix%", prefix)));
+        Component message = legacySerializer.deserialize(rawMessage.replace("%prefix%", prefix));
+        Bukkit.broadcast(message);
     }
 
     private void cancelScheduledTasks() {
@@ -381,7 +392,7 @@ public final class ClearLagPlugin extends JavaPlugin {
     }
 
     private String colorize(String text) {
-        return text.replace("&", "\u00A7");
+        return text.replace("&", "§");
     }
 
     private static final class CleanupResult {

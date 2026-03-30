@@ -100,11 +100,11 @@ warnings:
 
 messages:
   broadcast: true
-  prefix: "&b&lEternal &f&lSMP &7> "
-  warning: "%prefix%&fDe grond-items worden over &b%time% &fopgeruimd."
+  prefix: "&8[&bServer ClearLag&8] "
+  warning: "%prefix%&fGrond-items worden over &b%time% &fopgeruimd."
   cleanup-complete: "%prefix%&fCleanup voltooid: &b%amount% &fentities verwijderd (&7%details%&f)."
   manual-cleanup-complete: "%prefix%&fHandmatige cleanup voltooid: &b%amount% &fentities verwijderd (&7%details%&f)."
-  reload-complete: "%prefix%&fDe ClearLag config is opnieuw geladen."
+  reload-complete: "%prefix%&fDe ClearLag-config is opnieuw geladen."
   reload-usage: "%prefix%&fGebruik: &b/clearlag reload &7of &b/clearlag run"
   no-permission: "%prefix%&cJe hebt geen permissie voor dit commando."
 ```

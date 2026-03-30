@@ -12,6 +12,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Minecart;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -200,7 +201,12 @@ public final class ClearLagPlugin extends JavaPlugin {
         boolean removeHostile = getConfig().getBoolean("cleanup.mobs.remove-hostile-mobs", true);
         boolean removePassive = getConfig().getBoolean("cleanup.mobs.remove-passive-mobs", false);
 
-        for (LivingEntity entity : world.getLivingEntities()) {
+        for (Entity worldEntity : world.getEntities()) {
+            if (!(worldEntity instanceof LivingEntity)) {
+                continue;
+            }
+
+            LivingEntity entity = (LivingEntity) worldEntity;
             if (!shouldRemoveMob(entity, removeHostile, removePassive)) {
                 continue;
             }
@@ -259,12 +265,15 @@ public final class ClearLagPlugin extends JavaPlugin {
             return false;
         }
 
-        if (entity.getCustomName() != null || entity.isLeashed() || !entity.getPassengers().isEmpty() || entity.isInsideVehicle()) {
+        if (entity.getCustomName() != null || isLeashed(entity) || !entity.getPassengers().isEmpty() || entity.isInsideVehicle()) {
             return false;
         }
 
-        if (entity instanceof Tameable tameable && tameable.isTamed()) {
-            return false;
+        if (entity instanceof Tameable) {
+            Tameable tameable = (Tameable) entity;
+            if (tameable.isTamed()) {
+                return false;
+            }
         }
 
         if (entity instanceof Monster) {
@@ -276,6 +285,14 @@ public final class ClearLagPlugin extends JavaPlugin {
         }
 
         return false;
+    }
+
+    private boolean isLeashed(LivingEntity entity) {
+        if (!(entity instanceof Mob)) {
+            return false;
+        }
+
+        return ((Mob) entity).isLeashed();
     }
 
     private boolean hasNearbyPlayer(Entity entity, double maxDistanceSquared) {
@@ -299,18 +316,22 @@ public final class ClearLagPlugin extends JavaPlugin {
     }
 
     private boolean isIgnoredEntityType(Entity entity) {
-        EntityType entityType = entity.getType();
-        if (entityType == null) {
-            return false;
-        }
+        return getIgnoredEntityTypes().contains(entity.getType());
+    }
 
-        for (String ignoredTypeName : getConfig().getStringList("cleanup.ignored-entity-types")) {
-            if (entityType.name().equalsIgnoreCase(ignoredTypeName)) {
-                return true;
+    private Set<EntityType> getIgnoredEntityTypes() {
+        Set<EntityType> ignoredEntityTypes = new HashSet<>();
+        List<String> ignoredTypeNames = getConfig().getStringList("cleanup.ignored-entity-types");
+
+        for (String ignoredTypeName : ignoredTypeNames) {
+            try {
+                ignoredEntityTypes.add(EntityType.valueOf(ignoredTypeName.toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException ignored) {
+                getLogger().warning("Onbekend entity type in cleanup.ignored-entity-types: " + ignoredTypeName);
             }
         }
 
-        return false;
+        return ignoredEntityTypes;
     }
 
     private void broadcastMessage(String rawMessage) {

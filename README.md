@@ -7,6 +7,7 @@ Een eenvoudige ClearLag-plugin voor Paper servers. Deze plugin verwijdert automa
 - Automatische cleanup van grond-items
 - Opruimen van XP-orbs en pijlen
 - Optionele cleanup van andere projectiles, minecarts en boten
+- Afstandsgebaseerde mob-cleanup
 - Blacklist voor worlds en entity-types
 - Instelbare eerste delay en herhaal-interval
 - Aankondigingen vlak voor de cleanup
@@ -69,6 +70,11 @@ cleanup:
   remove-other-projectiles: false
   remove-minecarts: false
   remove-boats: false
+  mobs:
+    enabled: true
+    max-distance-from-player: 96
+    remove-hostile-mobs: true
+    remove-passive-mobs: false
   ignored-worlds:
     - spawn
     - lobby
@@ -76,6 +82,9 @@ cleanup:
     - ARMOR_STAND
     - ITEM_FRAME
     - GLOW_ITEM_FRAME
+    - VILLAGER
+    - WANDERING_TRADER
+    - ALLAY
 
 warnings:
   enabled: true
@@ -106,6 +115,8 @@ messages:
 - Voor elk ingestelde waarschuwingstijdstip wordt een broadcast verstuurd.
 - Tijdens de cleanup verwijdert de plugin standaard `Item`, `ExperienceOrb` en `AbstractArrow` entities uit alle werelden.
 - Extra types zoals andere projectiles, minecarts en boten zijn via de config in te schakelen.
+- Mob-cleanup kan hostiles en optioneel passive mobs verwijderen als er geen speler binnen de ingestelde radius staat.
+- Villagers en andere belangrijke entity-types kun je via `ignored-entity-types` beschermen.
 - Worlds in `ignored-worlds` worden volledig overgeslagen.
 - Entity-types in `ignored-entity-types` worden nooit verwijderd, ook niet als hun cleanup-type aan staat.
 - Daarna start automatisch de volgende cleanup-cyclus.

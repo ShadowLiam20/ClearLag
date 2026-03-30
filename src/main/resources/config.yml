@@ -7,6 +7,11 @@ cleanup:
   remove-other-projectiles: false
   remove-minecarts: false
   remove-boats: false
+  mobs:
+    enabled: true
+    max-distance-from-player: 96
+    remove-hostile-mobs: true
+    remove-passive-mobs: false
   ignored-worlds:
     - spawn
     - lobby
@@ -14,6 +19,9 @@ cleanup:
     - ARMOR_STAND
     - ITEM_FRAME
     - GLOW_ITEM_FRAME
+    - VILLAGER
+    - WANDERING_TRADER
+    - ALLAY
 
 warnings:
   enabled: true

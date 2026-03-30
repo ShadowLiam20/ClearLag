@@ -6,12 +6,17 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.World;
 import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Animals;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Tameable;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -179,9 +184,36 @@ public final class ClearLagPlugin extends JavaPlugin {
             if (getConfig().getBoolean("cleanup.remove-boats", false)) {
                 cleanupResult.add("boats", removeEntities(world.getEntitiesByClass(Boat.class)));
             }
+
+            if (getConfig().getBoolean("cleanup.mobs.enabled", false)) {
+                cleanupResult.add("mobs", removeFarMobs(world));
+            }
         }
 
         return cleanupResult;
+    }
+
+    private int removeFarMobs(World world) {
+        int removed = 0;
+        double maxDistance = Math.max(1D, getConfig().getDouble("cleanup.mobs.max-distance-from-player", 96D));
+        double maxDistanceSquared = maxDistance * maxDistance;
+        boolean removeHostile = getConfig().getBoolean("cleanup.mobs.remove-hostile-mobs", true);
+        boolean removePassive = getConfig().getBoolean("cleanup.mobs.remove-passive-mobs", false);
+
+        for (LivingEntity entity : world.getLivingEntities()) {
+            if (!shouldRemoveMob(entity, removeHostile, removePassive)) {
+                continue;
+            }
+
+            if (hasNearbyPlayer(entity, maxDistanceSquared)) {
+                continue;
+            }
+
+            entity.remove();
+            removed++;
+        }
+
+        return removed;
     }
 
     private int removeProjectiles(World world) {
@@ -216,6 +248,44 @@ public final class ClearLagPlugin extends JavaPlugin {
         }
 
         return removed;
+    }
+
+    private boolean shouldRemoveMob(LivingEntity entity, boolean removeHostile, boolean removePassive) {
+        if (isIgnoredEntityType(entity)) {
+            return false;
+        }
+
+        if (entity instanceof Player) {
+            return false;
+        }
+
+        if (entity.getCustomName() != null || entity.isLeashed() || !entity.getPassengers().isEmpty() || entity.isInsideVehicle()) {
+            return false;
+        }
+
+        if (entity instanceof Tameable tameable && tameable.isTamed()) {
+            return false;
+        }
+
+        if (entity instanceof Monster) {
+            return removeHostile;
+        }
+
+        if (entity instanceof Animals) {
+            return removePassive;
+        }
+
+        return false;
+    }
+
+    private boolean hasNearbyPlayer(Entity entity, double maxDistanceSquared) {
+        for (Player player : entity.getWorld().getPlayers()) {
+            if (player.getLocation().distanceSquared(entity.getLocation()) <= maxDistanceSquared) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Set<String> getIgnoredWorlds() {

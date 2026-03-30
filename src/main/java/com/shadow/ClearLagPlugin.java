@@ -3,6 +3,7 @@ package com.shadow;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.World;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Boat;
@@ -16,9 +17,12 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class ClearLagPlugin extends JavaPlugin {
     private final List<BukkitTask> scheduledTasks = new ArrayList<>();
@@ -145,8 +149,13 @@ public final class ClearLagPlugin extends JavaPlugin {
 
     private CleanupResult runCleanup() {
         CleanupResult cleanupResult = new CleanupResult();
+        Set<String> ignoredWorlds = getIgnoredWorlds();
 
         for (World world : Bukkit.getWorlds()) {
+            if (ignoredWorlds.contains(world.getName().toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+
             if (getConfig().getBoolean("cleanup.remove-items", true)) {
                 cleanupResult.add("items", removeEntities(world.getEntitiesByClass(Item.class)));
             }
@@ -183,6 +192,10 @@ public final class ClearLagPlugin extends JavaPlugin {
                 continue;
             }
 
+            if (isIgnoredEntityType(entity)) {
+                continue;
+            }
+
             entity.remove();
             removed++;
         }
@@ -194,11 +207,40 @@ public final class ClearLagPlugin extends JavaPlugin {
         int removed = 0;
 
         for (Entity entity : entities) {
+            if (isIgnoredEntityType(entity)) {
+                continue;
+            }
+
             entity.remove();
             removed++;
         }
 
         return removed;
+    }
+
+    private Set<String> getIgnoredWorlds() {
+        Set<String> ignoredWorlds = new HashSet<>();
+
+        for (String worldName : getConfig().getStringList("cleanup.ignored-worlds")) {
+            ignoredWorlds.add(worldName.toLowerCase(Locale.ROOT));
+        }
+
+        return ignoredWorlds;
+    }
+
+    private boolean isIgnoredEntityType(Entity entity) {
+        EntityType entityType = entity.getType();
+        if (entityType == null) {
+            return false;
+        }
+
+        for (String ignoredTypeName : getConfig().getStringList("cleanup.ignored-entity-types")) {
+            if (entityType.name().equalsIgnoreCase(ignoredTypeName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void broadcastMessage(String rawMessage) {

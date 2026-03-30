@@ -7,6 +7,13 @@ cleanup:
   remove-other-projectiles: false
   remove-minecarts: false
   remove-boats: false
+  ignored-worlds:
+    - spawn
+    - lobby
+  ignored-entity-types:
+    - ARMOR_STAND
+    - ITEM_FRAME
+    - GLOW_ITEM_FRAME
 
 warnings:
   enabled: true

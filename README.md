@@ -7,6 +7,7 @@ Een eenvoudige ClearLag-plugin voor Paper servers. Deze plugin verwijdert automa
 - Automatische cleanup van grond-items
 - Opruimen van XP-orbs en pijlen
 - Optionele cleanup van andere projectiles, minecarts en boten
+- Blacklist voor worlds en entity-types
 - Instelbare eerste delay en herhaal-interval
 - Aankondigingen vlak voor de cleanup
 - Handmatige cleanup met `/clearlag run`
@@ -68,6 +69,13 @@ cleanup:
   remove-other-projectiles: false
   remove-minecarts: false
   remove-boats: false
+  ignored-worlds:
+    - spawn
+    - lobby
+  ignored-entity-types:
+    - ARMOR_STAND
+    - ITEM_FRAME
+    - GLOW_ITEM_FRAME
 
 warnings:
   enabled: true
@@ -98,6 +106,8 @@ messages:
 - Voor elk ingestelde waarschuwingstijdstip wordt een broadcast verstuurd.
 - Tijdens de cleanup verwijdert de plugin standaard `Item`, `ExperienceOrb` en `AbstractArrow` entities uit alle werelden.
 - Extra types zoals andere projectiles, minecarts en boten zijn via de config in te schakelen.
+- Worlds in `ignored-worlds` worden volledig overgeslagen.
+- Entity-types in `ignored-entity-types` worden nooit verwijderd, ook niet als hun cleanup-type aan staat.
 - Daarna start automatisch de volgende cleanup-cyclus.
 
 ## Projectinfo

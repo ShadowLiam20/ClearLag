@@ -1,0 +1,23 @@
+cleanup:
+  start-delay-seconds: 900
+  interval-seconds: 900
+
+warnings:
+  enabled: true
+  times-seconds:
+    - 60
+    - 30
+    - 10
+    - 5
+    - 4
+    - 3
+    - 2
+    - 1
+
+messages:
+  broadcast: true
+  prefix: "&b&lEternal &f&lSMP &7> "
+  warning: "%prefix%&fDe grond-items worden over &b%time% &fopgeruimd."
+  cleanup-complete: "%prefix%&fEr zijn &b%amount% items &fvan de grond verwijderd."
+  reload-complete: "%prefix%&fDe ClearLag config is opnieuw geladen."
+  reload-usage: "%prefix%&fGebruik: &b/clearlag reload"
